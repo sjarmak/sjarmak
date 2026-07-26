@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-"""Render assets/readout.svg: this profile as a codeprobe eval-harness run.
+"""Render assets/readout.svg: an animated terminal session where my own eval
+harness runs a suite named after me, followed by a git log --graph of the career.
 
 Task statuses and utilization bars come from real GitHub activity. Run with
 GITHUB_TOKEN set (the refresh workflow provides one; locally use `gh auth token`).
+Styling and animation technique mirror jarmak-personal's readout SVG.
 """
 import datetime
 import json
@@ -12,7 +14,7 @@ import urllib.request
 OWNER = "sjarmak"
 TOKEN = os.environ.get("GITHUB_TOKEN", "")
 
-# (repo, oracle description, static result shown when the task is not RUNNING)
+# (repo, oracle description, result shown when the task is shipped rather than running)
 TASKS = [
     ("gascity", "multi-agent orchestration (maintainer)", "upstream"),
     ("codeprobe", "evals from your own merged PRs", "on pypi"),
@@ -23,8 +25,24 @@ TASKS = [
     ("EnterpriseBench", "112 enterprise-scale tasks", "112 tasks"),
 ]
 
-RUNNING_DAYS = 7      # pushed within N days -> RUNNING
-UTIL_WINDOW_DAYS = 14 # commit count window for the utilization bar
+GRAPH = [
+    ("* ", "f9c1e2a", " (HEAD -> main) ", "agent evals + research: codeprobe, EnterpriseBench, mem"),
+    ("| *", "b7a44d3", " (gas-city) ", "maintainer: gascity, beads, dashboard, packs"),
+    ("|/", "", "", ""),
+    ("* ", "8d05c1f", " ", "CodeScaleBench: 275 tasks, 20 suites"),
+    ("* ", "3e6a9b2", " ", "sourcegraph: sales engineering, agent demos"),
+    ("*  ", "c2d81f5", " ", "merge ads-scix: search meets software"),
+    ("|\\", "", "", ""),
+    ("| *", "5a9e0c4", " (ads-scix) ", "NASA ADS/SciX: 32.4M-paper search"),
+    ("|/", "", "", ""),
+    ("* ", "1f4b7a9", " ", "planetary science: Europa Clipper UVS"),
+]
+
+RUNNING_DAYS = 7
+UTIL_WINDOW_DAYS = 14
+W, LH, FS, PAD = 687, 17, 12, 22
+CHROME = 34
+TYPE_S = 0.031  # seconds per typed character
 
 
 def api(path):
@@ -33,22 +51,22 @@ def api(path):
     if TOKEN:
         req.add_header("Authorization", f"Bearer {TOKEN}")
     with urllib.request.urlopen(req, timeout=30) as r:
-        return json.load(r), r.headers
+        return json.load(r)
 
 
 def repo_activity(name):
     now = datetime.datetime.now(datetime.timezone.utc)
-    meta, _ = api(f"/repos/{OWNER}/{name}")
+    meta = api(f"/repos/{OWNER}/{name}")
     pushed = datetime.datetime.fromisoformat(meta["pushed_at"].replace("Z", "+00:00"))
     since = (now - datetime.timedelta(days=UTIL_WINDOW_DAYS)).isoformat()
-    commits, headers = api(f"/repos/{OWNER}/{name}/commits?since={since}&per_page=100")
-    n = len(commits)
-    return (now - pushed).days, n
+    commits = api(f"/repos/{OWNER}/{name}/commits?since={since}&per_page=100")
+    return (now - pushed).days, len(commits)
 
 
 def account_counts():
     # public-only so the numbers are identical under any token (Actions GITHUB_TOKEN or a PAT)
-    q = 'query($c:String){user(login:"' + OWNER + '"){repositories(first:100,after:$c,ownerAffiliations:OWNER,privacy:PUBLIC){pageInfo{hasNextPage endCursor}nodes{isArchived}}}}'
+    q = ('query($c:String){user(login:"' + OWNER + '"){repositories(first:100,after:$c,'
+         'ownerAffiliations:OWNER,privacy:PUBLIC){pageInfo{hasNextPage endCursor}nodes{isArchived}}}}')
     total = archived = 0
     cursor = None
     while True:
@@ -65,67 +83,117 @@ def account_counts():
     return total, archived
 
 
-ESC = {"&": "&amp;", "<": "&lt;", ">": "&gt;"}
-
-
 def esc(s):
-    return "".join(ESC.get(c, c) for c in s)
+    return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
+class Svg:
+    def __init__(self):
+        self.parts = []
+        self.y = CHROME + 28
+        self.t = 0.4
+
+    def line(self, tspans, cls="fade", dur=None, nchars=None, gap=1.0):
+        style = f"--t:{self.t:.2f}s"
+        if cls == "type":
+            style += f";--d:{dur:.2f}s;--n:{nchars}"
+        body = "".join(f"<tspan class='{c}'>{esc(s)}</tspan>" if c else f"<tspan>{esc(s)}</tspan>"
+                       for c, s in tspans)
+        self.parts.append(
+            f"<text x='{PAD}' y='{self.y}' class='{cls}' style='{style}' xml:space='preserve'>{body}</text>")
+        self.y += LH
+        self.t += (dur + 0.05) if cls == "type" else 0.09 * gap
+
+    def skip(self, n=1):
+        self.y += LH * n
 
 
 def build_svg(rows, total, archived):
-    W, LH, FS = 760, 22, 13
-    PAD, CHROME = 24, 38
-    n_lines = 6 + len(rows) + 4
-    H = CHROME + PAD + n_lines * LH + PAD
-    FG, DIM, GREEN, AMBER, BLUE = "#c9d1d9", "#8b949e", "#3fb950", "#d29922", "#58a6ff"
-    MONO = "font-family='SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace'"
+    s = Svg()
 
-    def text(x, y, s, fill=FG, weight=""):
-        w = " font-weight='600'" if weight else ""
-        return f"<text x='{x}' y='{y}' font-size='{FS}' fill='{fill}' {MONO}{w}>{esc(s)}</text>"
+    cmd1 = "codeprobe run --suite stephanie-jarmak --oracle tiered"
+    s.line([("green", "$ "), ("bright", cmd1)], cls="type", dur=len(cmd1) * TYPE_S, nchars=len(cmd1) + 2)
+    s.line([("muted", f"resolving suite ... {total} public repos, {total - archived} active")])
+    s.skip()
 
-    y = CHROME + PAD + FS
-    parts = [
-        f"<svg xmlns='http://www.w3.org/2000/svg' width='{W}' height='{H}' viewBox='0 0 {W} {H}'>",
-        f"<rect width='{W}' height='{H}' rx='10' fill='#161b22'/>",
-        f"<rect width='{W}' height='{CHROME}' rx='10' fill='#21262d'/>",
-        f"<rect y='{CHROME - 10}' width='{W}' height='10' fill='#21262d'/>",
-        "<circle cx='22' cy='19' r='6' fill='#ff5f56'/><circle cx='42' cy='19' r='6' fill='#ffbd2e'/><circle cx='62' cy='19' r='6' fill='#27c93f'/>",
-        f"<text x='{W // 2}' y='24' font-size='12' fill='{DIM}' {MONO} text-anchor='middle'>stephanie@jarmak: ~/benchmarks</text>",
-    ]
-    parts.append(text(PAD, y, "$", GREEN, "b"))
-    parts.append(text(PAD + 16, y, "codeprobe run --suite stephanie-jarmak --oracle tiered"))
-    y += LH
-    parts.append(text(PAD, y, f"resolving suite ... {total} repos scanned, {total - archived} active, {archived} archived (finished, not abandoned)", DIM))
-    y += LH * 2
-    xs = {"task": PAD, "oracle": 236, "util": 508, "status": 628}
-    parts.append(text(xs["task"], y, "TASK", DIM))
-    parts.append(text(xs["oracle"], y, "ORACLE", DIM))
-    parts.append(text(xs["util"], y, "UTIL/14d", DIM))
-    parts.append(text(xs["status"], y, "STATUS", DIM))
-    y += LH
-    passed = 0
+    border = "+" + "-" * 24 + "+" + "-" * 36 + "+" + "-" * 12 + "+" + "-" * 14 + "+"
+    header = ("| " + "TASK".ljust(23) + "| " + "ORACLE".ljust(35) + "| " + "UTIL/14d".ljust(11)
+              + "| " + "STATUS".ljust(13) + "|")
+    s.line([("dim", border)], gap=0.5)
+    s.line([("muted", header)], gap=0.5)
+    s.line([("dim", border)], gap=0.5)
+    shipped = 0
     for name, oracle, result, days_idle, commits in rows:
         running = days_idle <= RUNNING_DAYS
         if not running:
-            passed += 1
-        parts.append(text(xs["task"], y, name, BLUE))
-        parts.append(text(xs["oracle"], y, oracle))
+            shipped += 1
         cells = min(8, commits) if commits else (1 if running else 0)
-        for i in range(8):
-            fill = GREEN if i < cells else "#30363d"
-            parts.append(f"<rect x='{xs['util'] + i * 12}' y='{y - FS + 2}' width='9' height='{FS}' rx='2' fill='{fill}'/>")
-        status = ("RUNNING", AMBER) if running else (f"PASS {result}", GREEN)
-        parts.append(text(xs["status"], y, status[0], status[1], "b"))
-        y += LH
-    y += LH
-    parts.append(text(PAD, y, f"suite result: {len(rows)}/{len(rows)} oracles green ({len(rows) - passed} running, {passed} shipped)", GREEN, "b"))
-    y += LH
-    parts.append(text(PAD, y, "history: sourcegraph (SE, benchmarks) <- nasa ads/scix (search) <- planetary science (europa uvs)", DIM))
-    y += LH
-    parts.append(text(PAD, y, "auto-refreshed from real commit activity - sjarmak.ai", DIM))
-    parts.append("</svg>")
-    return "\n".join(parts)
+        bar = "#" * cells + "." * (8 - cells)
+        status = "RUNNING" if running else f"PASS {result}"
+        s.line([
+            ("dim", "| "), ("link", name.ljust(23)),
+            ("dim", "| "), ("", oracle.ljust(35)),
+            ("dim", "| "), ("green" if cells else "dim", bar), ("", "   "),
+            ("dim", "| "), ("amber" if running else "green", status.ljust(13)), ("dim", "|"),
+        ], gap=0.7)
+    s.line([("dim", border)], gap=0.5)
+    s.line([("green", f"suite result: {len(rows)}/{len(rows)} oracles green "
+                      f"({len(rows) - shipped} running, {shipped} shipped)")])
+    s.skip()
+
+    s.t += 0.4
+    cmd2 = "git log --graph --oneline career"
+    s.line([("green", "$ "), ("bright", cmd2)], cls="type", dur=len(cmd2) * TYPE_S, nchars=len(cmd2) + 2)
+    for glyphs, sha, ref, msg in GRAPH:
+        spans = [("dim", glyphs + " ")]
+        if sha:
+            spans.append(("orange", sha))
+        if ref:
+            spans.append(("cyan", ref))
+        if msg:
+            spans.append(("", msg))
+        s.line(spans, gap=0.8)
+    s.skip()
+
+    s.line([("muted", "readout auto-refreshed from real commit activity")])
+    s.parts.append(
+        f"<text x='{PAD}' y='{s.y}' xml:space='preserve'>"
+        f"<tspan class='green'>$ </tspan></text>")
+    s.parts.append(
+        f"<rect x='{PAD + 15}' y='{s.y - FS + 1}' width='7' height='{FS + 2}' class='cursor' "
+        f"style='--t:{s.t:.2f}s'/>")
+    s.y += LH
+
+    H = s.y + 16
+    head = (
+        f"<svg xmlns='http://www.w3.org/2000/svg' width='{W}' height='{H}' viewBox='0 0 {W} {H}' "
+        f"font-family=\"'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace\" "
+        f"role='img' aria-label='Terminal session: codeprobe runs an eval suite named "
+        f"stephanie-jarmak over my active projects, then git log --graph draws the career: "
+        f"measurement on main, gas-city as an active branch'>"
+        "<style>"
+        f"text {{ font-size: {FS}px; fill: #d0d3da; }}"
+        ".dim { fill: #5b5f6b; } .muted { fill: #9aa0ac; } .bright { fill: #eceef2; }"
+        ".orange { fill: #d97757; } .green { fill: #3fb950; } .amber { fill: #d29922; }"
+        ".link { fill: #79c0ff; } .cyan { fill: #56d4dd; }"
+        ".fade { opacity: 0; animation: appear 0.01s linear var(--t) forwards; }"
+        ".type { clip-path: inset(0 100% 0 0); animation: typing var(--d) steps(var(--n)) var(--t) forwards; }"
+        ".cursor { fill: #3fb950; opacity: 0; animation: blink 1.1s step-end var(--t) infinite; }"
+        "@keyframes appear { to { opacity: 1; } }"
+        "@keyframes typing { to { clip-path: inset(0 -2% 0 0); } }"
+        "@keyframes blink { 0% { opacity: 1; } 50% { opacity: 0; } }"
+        "@media (prefers-reduced-motion: reduce) {"
+        " .fade, .type, .cursor { animation: none; opacity: 1; clip-path: none; } }"
+        "</style>"
+        f"<rect width='{W}' height='{H}' rx='10' fill='#16171d' stroke='#2e303a'/>"
+        f"<path d='M0 10 a10 10 0 0 1 10 -10 h{W - 20} a10 10 0 0 1 10 10 v24 h-{W} z' fill='#1f2027'/>"
+        "<circle cx='22' cy='17' r='6' fill='#ff5f57'/>"
+        "<circle cx='42' cy='17' r='6' fill='#febc2e'/>"
+        "<circle cx='62' cy='17' r='6' fill='#28c840'/>"
+        f"<text x='{W // 2}' y='21' text-anchor='middle' fill='#9aa0ac' font-size='11'>"
+        "stephanie@jarmak: ~/projects</text>"
+    )
+    return head + "".join(s.parts) + "</svg>"
 
 
 def main():
@@ -139,7 +207,7 @@ def main():
     os.makedirs(os.path.dirname(out), exist_ok=True)
     with open(out, "w") as f:
         f.write(svg)
-    print(f"wrote {out}: {total} repos, {archived} archived, {len(rows)} tasks")
+    print(f"wrote {out}: {total} public repos, {archived} archived, {len(rows)} tasks")
 
 
 if __name__ == "__main__":
