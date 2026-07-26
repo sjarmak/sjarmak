@@ -82,7 +82,7 @@ TYPE_S = 0.031
 # column content widths (chars); the grid is self-consistent, checked by cell()
 COLS = {"task": 27, "what": 20, "updated": 8, "commits": 13, "role": 11, "status": 15}
 
-PERMISSION_TO_ROLE = {"admin": "maintainer", "maintain": "maintainer", "write": "contributor",
+PERMISSION_TO_ROLE = {"admin": "owner", "maintain": "maintainer", "write": "contributor",
                        "triage": "contributor", "read": "contributor", "none": "contributor"}
 
 
@@ -143,8 +143,16 @@ def repo_activity(owner, name):
     meta, _ = api(f"/repos/{owner}/{name}")
     pushed = datetime.datetime.fromisoformat(meta["pushed_at"].replace("Z", "+00:00"))
     total = commit_count(owner, name)
-    mine = mine_commit_count(owner, name)
     role = repo_role(owner, name)
+    if meta["fork"]:
+        # a fork carries real upstream contributor history (e.g. gascity's
+        # Julian Knutsen, Jim Wordelman, ...); only alias-name matches are mine
+        mine = mine_commit_count(owner, name)
+    else:
+        # an original repo I own or admin: every commit is mine or my own
+        # agents' (e.g. CodeScaleBench's "furiosa"/"mayor"/"refinery" personas),
+        # never an outside human contributor
+        mine = total
     return (now - pushed).days, mine, total, role
 
 
