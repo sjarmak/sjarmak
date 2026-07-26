@@ -17,34 +17,34 @@ TOKEN = os.environ.get("GITHUB_TOKEN", "")
 # category -> [(owner, repo, what, result-when-shipped)]
 CATEGORIES = [
     ("benchmarks + evals", [
-        ("sjarmak", "codeprobe", "evals from merged PRs", "on pypi"),
-        ("sourcegraph", "CodeScaleBench", "retrieval at repo scale", "275 tasks"),
-        ("sjarmak", "EnterpriseBench", "enterprise-scale tasks", "112 tasks"),
-        ("sjarmak", "migration-evals", "tiered-oracle migrations", "3 recipes"),
+        ("sjarmak", "codeprobe", "evals from your PRs", "on pypi"),
+        ("sourcegraph", "CodeScaleBench", "retrieval at scale", "275 tasks"),
+        ("sjarmak", "EnterpriseBench", "enterprise tasks", "112 tasks"),
+        ("sjarmak", "migration-evals", "migration grading", "3 recipes"),
         ("sjarmak", "agent-diagnostics", "why agents fail", "12k trials"),
         ("sjarmak", "mg-ax", "AX of MCP tools", "shipped"),
     ]),
     ("gas city", [
-        ("sjarmak", "gascity", "multi-agent orchestration", "upstream"),
+        ("sjarmak", "gascity", "orchestration SDK", "upstream"),
         ("sjarmak", "gascity-packs", "opt-in agent packs", "upstream"),
         ("sjarmak", "gascity-dashboard", "operator dashboard", "upstream"),
     ]),
     ("research", [
         ("sjarmak", "agent-code-authorship", "who wrote the code", "72-89%"),
-        ("sjarmak", "mem", "does memory help agents", "6.7k items"),
-        ("sjarmak", "agent-oriented-architecture", "repo readiness for agents", "toolkit"),
-        ("sjarmak", "GEO_public", "how LLMs see your product", "demo"),
+        ("sjarmak", "mem", "does memory help", "6.7k items"),
+        ("sjarmak", "agent-oriented-architecture", "agent-ready repos", "toolkit"),
+        ("sjarmak", "GEO_public", "LLM brand visibility", "demo"),
     ]),
     ("agent tooling", [
-        ("sjarmak", "livedocs", "docs-drift detection, MCP", "v0.2"),
-        ("sjarmak", "tom-swe", "theory-of-mind for agents", "3-tier mem"),
-        ("sjarmak", "coding-agent-workflows", "portable standards+skills", "rendered"),
+        ("sjarmak", "livedocs", "docs-drift over MCP", "v0.2"),
+        ("sjarmak", "tom-swe", "user theory-of-mind", "3-tier mem"),
+        ("sjarmak", "coding-agent-workflows", "portable standards", "rendered"),
         ("sjarmak", "brains", "agent warm-starts", "forkable"),
         ("sjarmak", "hvir", "view-first workbench", "shipped"),
-        ("sjarmak", "code-intelligence-digest", "code-intel news digest", "weekly"),
+        ("sjarmak", "code-intelligence-digest", "code-intel digest", "weekly"),
     ]),
     ("scix + search", [
-        ("sjarmak", "scix-agent", "32.4M-paper MCP server", "15 tools"),
+        ("sjarmak", "scix-agent", "32.4M-paper server", "15 tools"),
         ("sjarmak", "nls-finetune-scix", "NL search for SciX", "shipped"),
     ]),
     ("play", [
@@ -74,7 +74,7 @@ CHROME = 34
 TYPE_S = 0.031
 
 # column content widths (chars); the full row is exactly 88 chars wide
-COLS = {"task": 28, "what": 25, "util": 11, "status": 15}
+COLS = {"task": 27, "what": 20, "updated": 8, "commits": 7, "status": 15}
 
 
 def api(path):
@@ -83,16 +83,30 @@ def api(path):
     if TOKEN:
         req.add_header("Authorization", f"Bearer {TOKEN}")
     with urllib.request.urlopen(req, timeout=30) as r:
-        return json.load(r)
+        return json.load(r), r.headers
 
 
 def repo_activity(owner, name):
+    """(days since last push, total commit count on the default branch)"""
     now = datetime.datetime.now(datetime.timezone.utc)
-    meta = api(f"/repos/{owner}/{name}")
+    meta, _ = api(f"/repos/{owner}/{name}")
     pushed = datetime.datetime.fromisoformat(meta["pushed_at"].replace("Z", "+00:00"))
-    since = (now - datetime.timedelta(days=UTIL_WINDOW_DAYS)).isoformat()
-    commits = api(f"/repos/{owner}/{name}/commits?since={since}&per_page=100")
-    return (now - pushed).days, len(commits)
+    commits, headers = api(f"/repos/{owner}/{name}/commits?per_page=1")
+    link = headers.get("Link", "")
+    if 'rel="last"' in link:
+        last = [p for p in link.split(",") if 'rel="last"' in p][0]
+        total = int(last.split("page=")[-1].split(">")[0].split("&")[0])
+    else:
+        total = len(commits)
+    return (now - pushed).days, total
+
+
+def updated_str(days):
+    if days == 0:
+        return "today"
+    if days < 365:
+        return f"{days}d ago"
+    return f"{days // 365}y ago"
 
 
 def account_counts():
@@ -158,28 +172,29 @@ def build_svg(activity, total, archived):
     s.skip()
 
     border = "+" + "+".join("-" * (w + 1) for w in COLS.values()) + "+"
-    blank_cells = ("| " + cell("", "what") + "| " + cell("", "util") + "| "
-                   + cell("", "status") + "|")
+    blank_cells = ("| " + cell("", "what") + "| " + cell("", "updated") + "| "
+                   + cell("", "commits") + "| " + cell("", "status") + "|")
     s.line([("dim", border)], gap=0.5)
     s.line([("muted", "| " + cell("TASK", "task") + "| " + cell("WHAT", "what")
-                      + "| " + cell("UTIL/14d", "util") + "| " + cell("STATUS", "status") + "|")], gap=0.5)
+                      + "| " + cell("UPDATED", "updated") + "| " + cell("COMMITS", "commits")
+                      + "| " + cell("STATUS", "status") + "|")], gap=0.5)
     shipped = 0
     for label, rows in CATEGORIES:
         s.line([("dim", border)], gap=0.4)
         s.line([("dim", "| "), ("cyan", cell(label, "task")), ("dim", blank_cells)], gap=0.5)
         for owner, name, what, result in rows:
-            days_idle, commits = activity[(owner, name)]
+            days_idle, total_commits = activity[(owner, name)]
             running = days_idle <= RUNNING_DAYS
             if not running:
                 shipped += 1
-            cells_n = min(8, commits) if commits else (1 if running else 0)
-            bar = "#" * cells_n + "." * (8 - cells_n)
             status = "RUNNING" if running else f"PASS {result}"
-            task = name if owner == OWNER else f"{name} ({owner})"
+            task = name if owner == OWNER else f"{owner}/{name}"
+            commits_txt = f"{total_commits:,}".rjust(COLS["commits"] - 1) + " "
             s.line([
                 ("dim", "| "), ("link", cell(task, "task")),
                 ("dim", "| "), ("", cell(what, "what")),
-                ("dim", "| "), ("green" if cells_n else "dim", bar), ("", " " * (COLS["util"] - 8)),
+                ("dim", "| "), ("green" if running else "muted", cell(updated_str(days_idle), "updated")),
+                ("dim", "| "), ("bright", commits_txt),
                 ("dim", "| "), ("amber" if running else "green", cell(status, "status")), ("dim", "|"),
             ], gap=0.5)
     s.line([("dim", border)], gap=0.5)
