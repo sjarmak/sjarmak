@@ -16,14 +16,18 @@ TOKEN = os.environ.get("GITHUB_TOKEN", "")
 
 # (repo, oracle description, result shown when the task is shipped rather than running)
 TASKS = [
-    ("gascity", "multi-agent orchestration (maintainer)", "upstream"),
+    ("gascity", "orchestration SDK I maintain", "upstream"),
     ("codeprobe", "evals from your own merged PRs", "on pypi"),
     ("agent-code-authorship", "who really wrote the code", "72-89%"),
-    ("mem", "does memory help agents", "6,691 items"),
+    ("mem", "does memory help agents", "6.7k items"),
+    ("agent-diagnostics", "why agents fail, taxonomically", "12k trials"),
     ("scix-agent", "32.4M-paper MCP server", "15 tools"),
     ("livedocs", "docs-drift detection over MCP", "v0.2"),
-    ("EnterpriseBench", "112 enterprise-scale tasks", "112 tasks"),
+    ("agent-workflows", "parallel agent workflows", "21 skills"),
 ]
+
+# column content widths (chars); the full row is exactly 88 chars wide
+COLS = {"task": 22, "oracle": 31, "util": 11, "status": 15}
 
 GRAPH = [
     ("* ", "f9c1e2a", " (HEAD -> main) ", "agent evals + research: codeprobe, EnterpriseBench, mem"),
@@ -116,11 +120,16 @@ def build_svg(rows, total, archived):
     s.line([("muted", f"resolving suite ... {total} public repos, {total - archived} active")])
     s.skip()
 
-    border = "+" + "-" * 24 + "+" + "-" * 36 + "+" + "-" * 12 + "+" + "-" * 14 + "+"
-    header = ("| " + "TASK".ljust(23) + "| " + "ORACLE".ljust(35) + "| " + "UTIL/14d".ljust(11)
-              + "| " + "STATUS".ljust(13) + "|")
+    def cell(content, col):
+        w = COLS[col]
+        if len(content) > w:
+            raise ValueError(f"cell overflows {col}({w}): {content!r} is {len(content)} chars")
+        return content.ljust(w)
+
+    border = "+" + "+".join("-" * (w + 1) for w in COLS.values()) + "+"
     s.line([("dim", border)], gap=0.5)
-    s.line([("muted", header)], gap=0.5)
+    s.line([("muted", "| " + cell("TASK", "task") + "| " + cell("ORACLE", "oracle")
+                      + "| " + cell("UTIL/14d", "util") + "| " + cell("STATUS", "status") + "|")], gap=0.5)
     s.line([("dim", border)], gap=0.5)
     shipped = 0
     for name, oracle, result, days_idle, commits in rows:
@@ -131,10 +140,10 @@ def build_svg(rows, total, archived):
         bar = "#" * cells + "." * (8 - cells)
         status = "RUNNING" if running else f"PASS {result}"
         s.line([
-            ("dim", "| "), ("link", name.ljust(23)),
-            ("dim", "| "), ("", oracle.ljust(35)),
-            ("dim", "| "), ("green" if cells else "dim", bar), ("", "   "),
-            ("dim", "| "), ("amber" if running else "green", status.ljust(13)), ("dim", "|"),
+            ("dim", "| "), ("link", cell(name, "task")),
+            ("dim", "| "), ("", cell(oracle, "oracle")),
+            ("dim", "| "), ("green" if cells else "dim", bar), ("", " " * (COLS["util"] - 8)),
+            ("dim", "| "), ("amber" if running else "green", cell(status, "status")), ("dim", "|"),
         ], gap=0.7)
     s.line([("dim", border)], gap=0.5)
     s.line([("green", f"suite result: {len(rows)}/{len(rows)} oracles green "
