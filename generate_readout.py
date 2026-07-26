@@ -14,20 +14,45 @@ import urllib.request
 OWNER = "sjarmak"
 TOKEN = os.environ.get("GITHUB_TOKEN", "")
 
-# (repo, oracle description, result shown when the task is shipped rather than running)
-TASKS = [
-    ("gascity", "orchestration SDK I maintain", "upstream"),
-    ("codeprobe", "evals from your own merged PRs", "on pypi"),
-    ("agent-code-authorship", "who really wrote the code", "72-89%"),
-    ("mem", "does memory help agents", "6.7k items"),
-    ("agent-diagnostics", "why agents fail, taxonomically", "12k trials"),
-    ("scix-agent", "32.4M-paper MCP server", "15 tools"),
-    ("livedocs", "docs-drift detection over MCP", "v0.2"),
-    ("agent-workflows", "parallel agent workflows", "21 skills"),
+# category -> [(owner, repo, what, result-when-shipped)]
+CATEGORIES = [
+    ("benchmarks + evals", [
+        ("sjarmak", "codeprobe", "evals from merged PRs", "on pypi"),
+        ("sourcegraph", "CodeScaleBench", "retrieval at repo scale", "275 tasks"),
+        ("sjarmak", "EnterpriseBench", "enterprise-scale tasks", "112 tasks"),
+        ("sjarmak", "migration-evals", "tiered-oracle migrations", "3 recipes"),
+        ("sjarmak", "agent-diagnostics", "why agents fail", "12k trials"),
+        ("sjarmak", "mg-ax", "AX of MCP tools", "shipped"),
+    ]),
+    ("gas city", [
+        ("sjarmak", "gascity", "multi-agent orchestration", "upstream"),
+        ("sjarmak", "gascity-packs", "opt-in agent packs", "upstream"),
+        ("sjarmak", "gascity-dashboard", "operator dashboard", "upstream"),
+    ]),
+    ("research", [
+        ("sjarmak", "agent-code-authorship", "who wrote the code", "72-89%"),
+        ("sjarmak", "mem", "does memory help agents", "6.7k items"),
+        ("sjarmak", "agent-oriented-architecture", "repo readiness for agents", "toolkit"),
+        ("sjarmak", "GEO_public", "how LLMs see your product", "demo"),
+    ]),
+    ("agent tooling", [
+        ("sjarmak", "livedocs", "docs-drift detection, MCP", "v0.2"),
+        ("sjarmak", "tom-swe", "theory-of-mind for agents", "3-tier mem"),
+        ("sjarmak", "coding-agent-workflows", "portable standards+skills", "rendered"),
+        ("sjarmak", "brains", "agent warm-starts", "forkable"),
+        ("sjarmak", "hvir", "view-first workbench", "shipped"),
+        ("sjarmak", "code-intelligence-digest", "code-intel news digest", "weekly"),
+    ]),
+    ("scix + search", [
+        ("sjarmak", "scix-agent", "32.4M-paper MCP server", "15 tools"),
+        ("sjarmak", "nls-finetune-scix", "NL search for SciX", "shipped"),
+    ]),
+    ("play", [
+        ("sjarmak", "website", "sjarmak.ai", "live"),
+        ("sjarmak", "WheelOfFortune", "wheel practice app", "shipped"),
+        ("sjarmak", "embertide", "browser deckbuilder", "playable"),
+    ]),
 ]
-
-# column content widths (chars); the full row is exactly 88 chars wide
-COLS = {"task": 22, "oracle": 31, "util": 11, "status": 15}
 
 GRAPH = [
     ("* ", "f9c1e2a", " (HEAD -> main) ", "agent evals + research: codeprobe, EnterpriseBench, mem"),
@@ -46,7 +71,10 @@ RUNNING_DAYS = 7
 UTIL_WINDOW_DAYS = 14
 W, LH, FS, PAD = 687, 17, 12, 22
 CHROME = 34
-TYPE_S = 0.031  # seconds per typed character
+TYPE_S = 0.031
+
+# column content widths (chars); the full row is exactly 88 chars wide
+COLS = {"task": 28, "what": 25, "util": 11, "status": 15}
 
 
 def api(path):
@@ -58,12 +86,12 @@ def api(path):
         return json.load(r)
 
 
-def repo_activity(name):
+def repo_activity(owner, name):
     now = datetime.datetime.now(datetime.timezone.utc)
-    meta = api(f"/repos/{OWNER}/{name}")
+    meta = api(f"/repos/{owner}/{name}")
     pushed = datetime.datetime.fromisoformat(meta["pushed_at"].replace("Z", "+00:00"))
     since = (now - datetime.timedelta(days=UTIL_WINDOW_DAYS)).isoformat()
-    commits = api(f"/repos/{OWNER}/{name}/commits?since={since}&per_page=100")
+    commits = api(f"/repos/{owner}/{name}/commits?since={since}&per_page=100")
     return (now - pushed).days, len(commits)
 
 
@@ -112,42 +140,51 @@ class Svg:
         self.y += LH * n
 
 
-def build_svg(rows, total, archived):
+def cell(content, col):
+    w = COLS[col]
+    if len(content) > w:
+        raise ValueError(f"cell overflows {col}({w}): {content!r} is {len(content)} chars")
+    return content.ljust(w)
+
+
+def build_svg(activity, total, archived):
     s = Svg()
+    n_tasks = sum(len(rows) for _, rows in CATEGORIES)
 
     cmd1 = "codeprobe run --suite stephanie-jarmak --oracle tiered"
     s.line([("green", "$ "), ("bright", cmd1)], cls="type", dur=len(cmd1) * TYPE_S, nchars=len(cmd1) + 2)
-    s.line([("muted", f"resolving suite ... {total} public repos, {total - archived} active")])
+    s.line([("muted", f"resolving suite ... {n_tasks} tasks in {len(CATEGORIES)} categories, "
+                      f"{total} public repos")])
     s.skip()
 
-    def cell(content, col):
-        w = COLS[col]
-        if len(content) > w:
-            raise ValueError(f"cell overflows {col}({w}): {content!r} is {len(content)} chars")
-        return content.ljust(w)
-
     border = "+" + "+".join("-" * (w + 1) for w in COLS.values()) + "+"
+    blank_cells = ("| " + cell("", "what") + "| " + cell("", "util") + "| "
+                   + cell("", "status") + "|")
     s.line([("dim", border)], gap=0.5)
-    s.line([("muted", "| " + cell("TASK", "task") + "| " + cell("ORACLE", "oracle")
+    s.line([("muted", "| " + cell("TASK", "task") + "| " + cell("WHAT", "what")
                       + "| " + cell("UTIL/14d", "util") + "| " + cell("STATUS", "status") + "|")], gap=0.5)
-    s.line([("dim", border)], gap=0.5)
     shipped = 0
-    for name, oracle, result, days_idle, commits in rows:
-        running = days_idle <= RUNNING_DAYS
-        if not running:
-            shipped += 1
-        cells = min(8, commits) if commits else (1 if running else 0)
-        bar = "#" * cells + "." * (8 - cells)
-        status = "RUNNING" if running else f"PASS {result}"
-        s.line([
-            ("dim", "| "), ("link", cell(name, "task")),
-            ("dim", "| "), ("", cell(oracle, "oracle")),
-            ("dim", "| "), ("green" if cells else "dim", bar), ("", " " * (COLS["util"] - 8)),
-            ("dim", "| "), ("amber" if running else "green", cell(status, "status")), ("dim", "|"),
-        ], gap=0.7)
+    for label, rows in CATEGORIES:
+        s.line([("dim", border)], gap=0.4)
+        s.line([("dim", "| "), ("cyan", cell(label, "task")), ("dim", blank_cells)], gap=0.5)
+        for owner, name, what, result in rows:
+            days_idle, commits = activity[(owner, name)]
+            running = days_idle <= RUNNING_DAYS
+            if not running:
+                shipped += 1
+            cells_n = min(8, commits) if commits else (1 if running else 0)
+            bar = "#" * cells_n + "." * (8 - cells_n)
+            status = "RUNNING" if running else f"PASS {result}"
+            task = name if owner == OWNER else f"{name} ({owner})"
+            s.line([
+                ("dim", "| "), ("link", cell(task, "task")),
+                ("dim", "| "), ("", cell(what, "what")),
+                ("dim", "| "), ("green" if cells_n else "dim", bar), ("", " " * (COLS["util"] - 8)),
+                ("dim", "| "), ("amber" if running else "green", cell(status, "status")), ("dim", "|"),
+            ], gap=0.5)
     s.line([("dim", border)], gap=0.5)
-    s.line([("green", f"suite result: {len(rows)}/{len(rows)} oracles green "
-                      f"({len(rows) - shipped} running, {shipped} shipped)")])
+    s.line([("green", f"suite result: {n_tasks}/{n_tasks} oracles green "
+                      f"({n_tasks - shipped} running, {shipped} shipped)")])
     s.skip()
 
     s.t += 0.4
@@ -166,8 +203,7 @@ def build_svg(rows, total, archived):
 
     s.line([("muted", "readout auto-refreshed from real commit activity")])
     s.parts.append(
-        f"<text x='{PAD}' y='{s.y}' xml:space='preserve'>"
-        f"<tspan class='green'>$ </tspan></text>")
+        f"<text x='{PAD}' y='{s.y}' xml:space='preserve'><tspan class='green'>$ </tspan></text>")
     s.parts.append(
         f"<rect x='{PAD + 15}' y='{s.y - FS + 1}' width='7' height='{FS + 2}' class='cursor' "
         f"style='--t:{s.t:.2f}s'/>")
@@ -178,8 +214,8 @@ def build_svg(rows, total, archived):
         f"<svg xmlns='http://www.w3.org/2000/svg' width='{W}' height='{H}' viewBox='0 0 {W} {H}' "
         f"font-family=\"'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace\" "
         f"role='img' aria-label='Terminal session: codeprobe runs an eval suite named "
-        f"stephanie-jarmak over my active projects, then git log --graph draws the career: "
-        f"measurement on main, gas-city as an active branch'>"
+        f"stephanie-jarmak over my projects grouped by category, then git log --graph draws "
+        f"the career: measurement on main, gas-city as an active branch'>"
         "<style>"
         f"text {{ font-size: {FS}px; fill: #d0d3da; }}"
         ".dim { fill: #5b5f6b; } .muted { fill: #9aa0ac; } .bright { fill: #eceef2; }"
@@ -206,17 +242,18 @@ def build_svg(rows, total, archived):
 
 
 def main():
-    rows = []
-    for name, oracle, result in TASKS:
-        days_idle, commits = repo_activity(name)
-        rows.append((name, oracle, result, days_idle, commits))
+    activity = {}
+    for _, rows in CATEGORIES:
+        for owner, name, _, _ in rows:
+            activity[(owner, name)] = repo_activity(owner, name)
     total, archived = account_counts()
-    svg = build_svg(rows, total, archived)
+    svg = build_svg(activity, total, archived)
     out = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "readout.svg")
     os.makedirs(os.path.dirname(out), exist_ok=True)
     with open(out, "w") as f:
         f.write(svg)
-    print(f"wrote {out}: {total} public repos, {archived} archived, {len(rows)} tasks")
+    n = sum(len(r) for _, r in CATEGORIES)
+    print(f"wrote {out}: {n} tasks in {len(CATEGORIES)} categories, {total} public repos")
 
 
 if __name__ == "__main__":
