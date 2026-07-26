@@ -9,10 +9,16 @@ Styling and animation technique mirror jarmak-personal's readout SVG.
 import datetime
 import json
 import os
+import urllib.error
 import urllib.request
 
 OWNER = "sjarmak"
 TOKEN = os.environ.get("GITHUB_TOKEN", "")
+# raw git author names counted as "mine", including agent commits made under my
+# identity: GitHub's ?author= filter matches by verified-email account linkage,
+# which misses commits made with a placeholder/agent git email (seen on codeprobe:
+# name="sjarmak", email="t@t.co" resolves to an unrelated GitHub account).
+MY_NAMES = {"sjarmak", "stephanie jarmak"}
 
 # category -> [(owner, repo, what, result-when-shipped)]
 CATEGORIES = [
@@ -81,7 +87,8 @@ PERMISSION_TO_ROLE = {"admin": "maintainer", "maintain": "maintainer", "write": 
 
 
 def api(path):
-    req = urllib.request.Request(f"https://api.github.com{path}")
+    url = path if path.startswith("http") else f"https://api.github.com{path}"
+    req = urllib.request.Request(url)
     req.add_header("Accept", "application/vnd.github+json")
     if TOKEN:
         req.add_header("Authorization", f"Bearer {TOKEN}")
@@ -89,14 +96,32 @@ def api(path):
         return json.load(r), r.headers
 
 
-def commit_count(owner, name, author=None):
-    q = f"?author={author}&per_page=1" if author else "?per_page=1"
-    commits, headers = api(f"/repos/{owner}/{name}/commits{q}")
+def _next_link(headers):
+    link = headers.get("Link", "")
+    nxt = next((p for p in link.split(",") if 'rel="next"' in p), None)
+    return nxt.split(";")[0].strip().strip("<>") if nxt else None
+
+
+def commit_count(owner, name):
+    commits, headers = api(f"/repos/{owner}/{name}/commits?per_page=1")
     link = headers.get("Link", "")
     if 'rel="last"' in link:
         last = [p for p in link.split(",") if 'rel="last"' in p][0]
         return int(last.split("page=")[-1].split(">")[0].split("&")[0])
     return len(commits)
+
+
+def mine_commit_count(owner, name):
+    """Paginate the full commit history and count raw author-name matches.
+    Slower than the ?author= filter but correct for agent-driven commits made
+    under a placeholder git identity that never resolves to my GitHub account."""
+    count = 0
+    path = f"/repos/{owner}/{name}/commits?per_page=100"
+    while path:
+        commits, headers = api(path)
+        count += sum(1 for c in commits if c["commit"]["author"]["name"].strip().lower() in MY_NAMES)
+        path = _next_link(headers)
+    return count
 
 
 def repo_role(owner, name):
@@ -117,10 +142,8 @@ def repo_activity(owner, name):
     now = datetime.datetime.now(datetime.timezone.utc)
     meta, _ = api(f"/repos/{owner}/{name}")
     pushed = datetime.datetime.fromisoformat(meta["pushed_at"].replace("Z", "+00:00"))
-    # always filter by author, even on owned repos: a fork's total includes
-    # upstream history that isn't hers just because she owns the copy
     total = commit_count(owner, name)
-    mine = commit_count(owner, name, author=OWNER)
+    mine = mine_commit_count(owner, name)
     role = repo_role(owner, name)
     return (now - pushed).days, mine, total, role
 
