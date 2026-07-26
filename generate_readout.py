@@ -69,7 +69,7 @@ GRAPH = [
 
 RUNNING_DAYS = 7
 UTIL_WINDOW_DAYS = 14
-W, LH, FS, PAD = 687, 17, 12, 22
+W, LH, FS, PAD = 820, 17, 12, 22  # 107-char grid at ~7.2px/char needs the wider frame
 CHROME = 34
 TYPE_S = 0.031
 
@@ -102,8 +102,14 @@ def commit_count(owner, name, author=None):
 def repo_role(owner, name):
     if owner == OWNER:
         return "owner"
-    perm, _ = api(f"/repos/{owner}/{name}/collaborators/{OWNER}/permission")
-    return PERMISSION_TO_ROLE.get(perm["permission"], "contributor")
+    try:
+        perm, _ = api(f"/repos/{owner}/{name}/collaborators/{OWNER}/permission")
+        return PERMISSION_TO_ROLE.get(perm["permission"], "contributor")
+    except urllib.error.HTTPError as e:
+        # the Actions GITHUB_TOKEN is scoped to this repo and cannot read
+        # collaborator permissions on other orgs' repos; fall back loudly
+        print(f"warning: permission lookup failed for {owner}/{name} ({e.code}), using 'contributor'")
+        return "contributor"
 
 
 def repo_activity(owner, name):

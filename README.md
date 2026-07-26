@@ -1,6 +1,6 @@
 <div align="center">
   <a href="https://github.com/sjarmak?tab=repositories">
-    <img src="assets/readout.svg" width="687" alt="A terminal session: codeprobe, my own eval harness, runs a suite named stephanie-jarmak. My projects stream by grouped by category (benchmarks and evals, gas city, research, agent tooling, scix and search, play), each with last-updated age, total commit count, and a PASS or RUNNING status from real activity. Then git log --graph draws the career as a commit graph: measurement work on main from planetary science through NASA ADS/SciX and Sourcegraph to agent evals at HEAD, with gas-city as an active branch.">
+    <img src="assets/readout.svg" width="820" alt="A terminal session: codeprobe, my own eval harness, runs a suite named stephanie-jarmak. My projects stream by grouped by category (benchmarks and evals, gas city, research, agent tooling, scix and search, play), each with last-updated age, total commit count, and a PASS or RUNNING status from real activity. Then git log --graph draws the career as a commit graph: measurement work on main from planetary science through NASA ADS/SciX and Sourcegraph to agent evals at HEAD, with gas-city as an active branch.">
   </a>
 </div>
 
@@ -55,4 +55,3 @@
     <a href="https://sjarmak.ai"><strong>sjarmak.ai</strong></a>
   </sub>
 </p>
-
