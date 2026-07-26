@@ -1,0 +1,94 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='760' height='460' viewBox='0 0 760 460'>
+<rect width='760' height='460' rx='10' fill='#161b22'/>
+<rect width='760' height='38' rx='10' fill='#21262d'/>
+<rect y='28' width='760' height='10' fill='#21262d'/>
+<circle cx='22' cy='19' r='6' fill='#ff5f56'/><circle cx='42' cy='19' r='6' fill='#ffbd2e'/><circle cx='62' cy='19' r='6' fill='#27c93f'/>
+<text x='380' y='24' font-size='12' fill='#8b949e' font-family='SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace' text-anchor='middle'>stephanie@jarmak: ~/benchmarks</text>
+<text x='24' y='75' font-size='13' fill='#3fb950' font-family='SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace' font-weight='600'>$</text>
+<text x='40' y='75' font-size='13' fill='#c9d1d9' font-family='SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace'>codeprobe run --suite stephanie-jarmak --oracle tiered</text>
+<text x='24' y='97' font-size='13' fill='#8b949e' font-family='SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace'>resolving suite ... 71 repos scanned, 34 active, 37 archived (finished, not abandoned)</text>
+<text x='24' y='141' font-size='13' fill='#8b949e' font-family='SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace'>TASK</text>
+<text x='236' y='141' font-size='13' fill='#8b949e' font-family='SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace'>ORACLE</text>
+<text x='508' y='141' font-size='13' fill='#8b949e' font-family='SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace'>UTIL/14d</text>
+<text x='628' y='141' font-size='13' fill='#8b949e' font-family='SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace'>STATUS</text>
+<text x='24' y='163' font-size='13' fill='#58a6ff' font-family='SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace'>gascity</text>
+<text x='236' y='163' font-size='13' fill='#c9d1d9' font-family='SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace'>multi-agent orchestration (maintainer)</text>
+<rect x='508' y='152' width='9' height='13' rx='2' fill='#3fb950'/>
+<rect x='520' y='152' width='9' height='13' rx='2' fill='#30363d'/>
+<rect x='532' y='152' width='9' height='13' rx='2' fill='#30363d'/>
+<rect x='544' y='152' width='9' height='13' rx='2' fill='#30363d'/>
+<rect x='556' y='152' width='9' height='13' rx='2' fill='#30363d'/>
+<rect x='568' y='152' width='9' height='13' rx='2' fill='#30363d'/>
+<rect x='580' y='152' width='9' height='13' rx='2' fill='#30363d'/>
+<rect x='592' y='152' width='9' height='13' rx='2' fill='#30363d'/>
+<text x='628' y='163' font-size='13' fill='#d29922' font-family='SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace' font-weight='600'>RUNNING</text>
+<text x='24' y='185' font-size='13' fill='#58a6ff' font-family='SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace'>codeprobe</text>
+<text x='236' y='185' font-size='13' fill='#c9d1d9' font-family='SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace'>evals from your own merged PRs</text>
+<rect x='508' y='174' width='9' height='13' rx='2' fill='#3fb950'/>
+<rect x='520' y='174' width='9' height='13' rx='2' fill='#3fb950'/>
+<rect x='532' y='174' width='9' height='13' rx='2' fill='#3fb950'/>
+<rect x='544' y='174' width='9' height='13' rx='2' fill='#3fb950'/>
+<rect x='556' y='174' width='9' height='13' rx='2' fill='#3fb950'/>
+<rect x='568' y='174' width='9' height='13' rx='2' fill='#3fb950'/>
+<rect x='580' y='174' width='9' height='13' rx='2' fill='#3fb950'/>
+<rect x='592' y='174' width='9' height='13' rx='2' fill='#3fb950'/>
+<text x='628' y='185' font-size='13' fill='#d29922' font-family='SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace' font-weight='600'>RUNNING</text>
+<text x='24' y='207' font-size='13' fill='#58a6ff' font-family='SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace'>agent-code-authorship</text>
+<text x='236' y='207' font-size='13' fill='#c9d1d9' font-family='SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace'>who really wrote the code</text>
+<rect x='508' y='196' width='9' height='13' rx='2' fill='#3fb950'/>
+<rect x='520' y='196' width='9' height='13' rx='2' fill='#3fb950'/>
+<rect x='532' y='196' width='9' height='13' rx='2' fill='#30363d'/>
+<rect x='544' y='196' width='9' height='13' rx='2' fill='#30363d'/>
+<rect x='556' y='196' width='9' height='13' rx='2' fill='#30363d'/>
+<rect x='568' y='196' width='9' height='13' rx='2' fill='#30363d'/>
+<rect x='580' y='196' width='9' height='13' rx='2' fill='#30363d'/>
+<rect x='592' y='196' width='9' height='13' rx='2' fill='#30363d'/>
+<text x='628' y='207' font-size='13' fill='#d29922' font-family='SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace' font-weight='600'>RUNNING</text>
+<text x='24' y='229' font-size='13' fill='#58a6ff' font-family='SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace'>mem</text>
+<text x='236' y='229' font-size='13' fill='#c9d1d9' font-family='SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace'>does memory help agents</text>
+<rect x='508' y='218' width='9' height='13' rx='2' fill='#3fb950'/>
+<rect x='520' y='218' width='9' height='13' rx='2' fill='#3fb950'/>
+<rect x='532' y='218' width='9' height='13' rx='2' fill='#3fb950'/>
+<rect x='544' y='218' width='9' height='13' rx='2' fill='#3fb950'/>
+<rect x='556' y='218' width='9' height='13' rx='2' fill='#30363d'/>
+<rect x='568' y='218' width='9' height='13' rx='2' fill='#30363d'/>
+<rect x='580' y='218' width='9' height='13' rx='2' fill='#30363d'/>
+<rect x='592' y='218' width='9' height='13' rx='2' fill='#30363d'/>
+<text x='628' y='229' font-size='13' fill='#3fb950' font-family='SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace' font-weight='600'>PASS 6,691 items</text>
+<text x='24' y='251' font-size='13' fill='#58a6ff' font-family='SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace'>scix-agent</text>
+<text x='236' y='251' font-size='13' fill='#c9d1d9' font-family='SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace'>32.4M-paper MCP server</text>
+<rect x='508' y='240' width='9' height='13' rx='2' fill='#30363d'/>
+<rect x='520' y='240' width='9' height='13' rx='2' fill='#30363d'/>
+<rect x='532' y='240' width='9' height='13' rx='2' fill='#30363d'/>
+<rect x='544' y='240' width='9' height='13' rx='2' fill='#30363d'/>
+<rect x='556' y='240' width='9' height='13' rx='2' fill='#30363d'/>
+<rect x='568' y='240' width='9' height='13' rx='2' fill='#30363d'/>
+<rect x='580' y='240' width='9' height='13' rx='2' fill='#30363d'/>
+<rect x='592' y='240' width='9' height='13' rx='2' fill='#30363d'/>
+<text x='628' y='251' font-size='13' fill='#3fb950' font-family='SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace' font-weight='600'>PASS 15 tools</text>
+<text x='24' y='273' font-size='13' fill='#58a6ff' font-family='SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace'>livedocs</text>
+<text x='236' y='273' font-size='13' fill='#c9d1d9' font-family='SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace'>docs-drift detection over MCP</text>
+<rect x='508' y='262' width='9' height='13' rx='2' fill='#3fb950'/>
+<rect x='520' y='262' width='9' height='13' rx='2' fill='#30363d'/>
+<rect x='532' y='262' width='9' height='13' rx='2' fill='#30363d'/>
+<rect x='544' y='262' width='9' height='13' rx='2' fill='#30363d'/>
+<rect x='556' y='262' width='9' height='13' rx='2' fill='#30363d'/>
+<rect x='568' y='262' width='9' height='13' rx='2' fill='#30363d'/>
+<rect x='580' y='262' width='9' height='13' rx='2' fill='#30363d'/>
+<rect x='592' y='262' width='9' height='13' rx='2' fill='#30363d'/>
+<text x='628' y='273' font-size='13' fill='#d29922' font-family='SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace' font-weight='600'>RUNNING</text>
+<text x='24' y='295' font-size='13' fill='#58a6ff' font-family='SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace'>EnterpriseBench</text>
+<text x='236' y='295' font-size='13' fill='#c9d1d9' font-family='SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace'>112 enterprise-scale tasks</text>
+<rect x='508' y='284' width='9' height='13' rx='2' fill='#3fb950'/>
+<rect x='520' y='284' width='9' height='13' rx='2' fill='#3fb950'/>
+<rect x='532' y='284' width='9' height='13' rx='2' fill='#3fb950'/>
+<rect x='544' y='284' width='9' height='13' rx='2' fill='#3fb950'/>
+<rect x='556' y='284' width='9' height='13' rx='2' fill='#3fb950'/>
+<rect x='568' y='284' width='9' height='13' rx='2' fill='#3fb950'/>
+<rect x='580' y='284' width='9' height='13' rx='2' fill='#3fb950'/>
+<rect x='592' y='284' width='9' height='13' rx='2' fill='#3fb950'/>
+<text x='628' y='295' font-size='13' fill='#3fb950' font-family='SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace' font-weight='600'>PASS 112 tasks</text>
+<text x='24' y='339' font-size='13' fill='#3fb950' font-family='SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace' font-weight='600'>suite result: 7/7 oracles green (4 running, 3 shipped)</text>
+<text x='24' y='361' font-size='13' fill='#8b949e' font-family='SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace'>history: sourcegraph (SE, benchmarks) &lt;- nasa ads/scix (search) &lt;- planetary science (europa uvs)</text>
+<text x='24' y='383' font-size='13' fill='#8b949e' font-family='SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace'>auto-refreshed from real commit activity - sjarmak.ai</text>
+</svg>

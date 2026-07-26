@@ -1,17 +1,16 @@
-# PREVIEW — composed profile README concept (top 5 brainstorm picks layered)
+<div align="center">
+  <img src="assets/readout.svg" width="760" alt="A terminal running codeprobe, my own eval harness, against a suite named stephanie-jarmak: gascity, codeprobe, agent-code-authorship, mem, scix-agent, livedocs, and EnterpriseBench stream by as tasks with PASS or RUNNING statuses and utilization bars driven by real commit activity. The suite header counts my repos and notes the archived ones are finished, not abandoned. The history line traces Sourcegraph, NASA ADS/SciX, and planetary science.">
+</div>
 
-*This is a mockup demonstrating the shortlisted devices with your real content. Numbers and links are real; copy is draft.*
-
----
-
-# Stephanie Jarmak
-
-I build benchmarks and tooling for AI coding agents[^1], maintain the Gas City multi-agent orchestration ecosystem[^2], and hold that a claim about agents is worth exactly the evidence behind it. Previously Sourcegraph[^3]; before that, planetary science and NASA ADS search[^4].
-
-[^1]: Six public benchmark suites; see the report below. Flagship: [codeprobe](https://github.com/sjarmak/codeprobe), on PyPI.
-[^2]: [gastownhall](https://github.com/gastownhall): gascity, beads, dashboard, packs. Contributions stage in my forks before landing upstream.
-[^3]: Sales engineering and the CodeContextBench family, now archived as work history.
-[^4]: Europa Clipper UVS observation planning; the thread continues in [scix-agent](https://github.com/sjarmak/scix-agent) (32.4M papers, 299M citation edges, 15 MCP tools).
+<p align="center">
+  <sub>
+    I build benchmarks for AI coding agents, so the profile runs one on me
+    &nbsp;·&nbsp;
+    readout refreshed from real commit activity by <a href="generate_readout.py"><code>generate_readout.py</code></a>
+    &nbsp;·&nbsp;
+    <a href="https://sjarmak.ai"><strong>sjarmak.ai</strong></a>
+  </sub>
+</p>
 
 ```mermaid
 gitGraph
@@ -22,56 +21,29 @@ gitGraph
   commit id: "SciX relevance"
   checkout main
   merge ads-scix id: "search meets software"
-  commit id: "Sourcegraph SE"
-  commit id: "CodeContextBench"
+  commit id: "sourcegraph SE"
+  commit id: "CodeScaleBench"
   branch gas-city
   commit id: "gascity + beads"
-  commit id: "maintainer" tag: "HEAD"
+  commit id: "maintainer"
+  checkout main
+  commit id: "codeprobe"
+  commit id: "EnterpriseBench"
+  commit id: "agent evals" tag: "HEAD"
 ```
 
-## Results: benchmarks & evaluation
+<p align="center">
+  <sub>career as a commit graph: measurement is the trunk; Gas City is an active branch, not a departure</sub>
+</p>
 
-| task | what it measures | result | evidence |
-|---|---|---|---|
-| codeprobe | your whole agent setup, against your own merged PRs | on PyPI | [repo](https://github.com/sjarmak/codeprobe) |
-| EnterpriseBench | cross-repo enterprise tasks | 112 tasks, 10 types | [repo](https://github.com/sjarmak/EnterpriseBench) |
-| migration-evals | batch-change diffs through tiered oracles | 3 recipes shipped | [repo](https://github.com/sjarmak/migration-evals) |
-| agent-diagnostics | why agents fail, taxonomically | 11,995 labeled trials | [repo](https://github.com/sjarmak/agent-diagnostics) |
+<details>
+<summary>Plain-text version, with evidence</summary>
 
-> [!IMPORTANT]
-> Finding: across 151 popular repos, 72-89% of surviving 2024+ lines are agent-written. Commit trailers only admit to 14.5%.
+I build tooling and benchmarks for AI coding agents[^1], maintain the Gas City multi-agent orchestration ecosystem[^2], and hold that a claim about agents is worth exactly the evidence behind it. Previously Sourcegraph[^3]; before that, planetary science and NASA ADS search[^4].
 
-```mermaid
-xychart-beta
-  title "Who wrote 2024+ surviving lines?"
-  x-axis ["visible in trailers", "style estimate (low)", "style estimate (high)"]
-  y-axis "% of lines" 0 --> 100
-  bar [14.5, 72, 89]
-```
+[^1]: [codeprobe](https://github.com/sjarmak/codeprobe) (evals from your own merged PRs, on PyPI), [EnterpriseBench](https://github.com/sjarmak/EnterpriseBench) (112 enterprise-scale tasks), [migration-evals](https://github.com/sjarmak/migration-evals) (tiered oracles anchored to merged-PR survival), [agent-diagnostics](https://github.com/sjarmak/agent-diagnostics) (11,995 labeled failure trials), [mg-ax](https://github.com/sjarmak/mg-ax), [CodeScaleBench-Public](https://github.com/sjarmak/CodeScaleBench-Public).
+[^2]: [gastownhall](https://github.com/gastownhall): gascity, beads, dashboard, packs. Contributions stage in [my forks](https://github.com/sjarmak/gascity) before landing upstream. Research on the same stack: [agent-code-authorship](https://github.com/sjarmak/agent-code-authorship) (72-89% of surviving 2024+ lines in 151 popular repos are agent-written; trailers admit to 14.5%), [mem](https://github.com/sjarmak/mem) (agentic memory benchmarked on 6,691 real work items). Tooling: [livedocs](https://github.com/sjarmak/livedocs), [tom-swe](https://github.com/sjarmak/tom-swe), [agent-workflows](https://github.com/sjarmak/agent-workflows), [brains](https://github.com/sjarmak/brains).
+[^3]: Sales engineering and the CodeContextBench benchmark family, archived on this profile as work history.
+[^4]: Europa Clipper UVS observation planning and Mars granular-flow simulation, archived here; the thread continues in [scix-agent](https://github.com/sjarmak/scix-agent), a 15-tool MCP server over the 32.4M-paper NASA ADS/SciX corpus, and [nls-finetune-scix](https://github.com/sjarmak/nls-finetune-scix).
 
-## Try the work (one line each)
-
-```bash
-pipx run codeprobe --help          # PR-derived agent evals
-brew install sjarmak/tap/livedocs  # docs-drift detection over MCP (next release)
-npx tom-swe                        # theory-of-mind memory for Claude Code
-```
-
-## Project lifespans
-
-Archived means finished, not abandoned. The record:
-
-```mermaid
-gantt
-  dateFormat YYYY-MM
-  section Astronomy
-    Europa Clipper UVS tooling :done, 2023-01, 2023-10
-  section Sourcegraph
-    CodeContextBench family    :done, 2025-11, 2026-03
-  section Current
-    codeprobe                  :active, 2026-03, 2026-08
-    Gas City maintainership    :active, 2026-04, 2026-08
-```
-
----
-*Preview ends. Full brainstorm: 30 ideas, 10 prior-art exclusion zones, ratings in `.brainstorm/profile-readme.md`.*
+</details>
