@@ -20,43 +20,46 @@ TOKEN = os.environ.get("GITHUB_TOKEN", "")
 # name="sjarmak", email="t@t.co" resolves to an unrelated GitHub account).
 MY_NAMES = {"sjarmak", "stephanie jarmak"}
 
-# category -> [(owner, repo, what, result-when-shipped)]
+# category -> [(owner, repo, what, result-when-shipped, role)]
+# role is declared, not derived: permission APIs cannot express authorship
+# (CodeScaleBench lives in the sourcegraph org but is my project), and the
+# Actions token cannot query cross-org permissions at all.
 CATEGORIES = [
     ("benchmarks + evals", [
-        ("sjarmak", "codeprobe", "evals from your PRs", "on pypi"),
-        ("sourcegraph", "CodeScaleBench", "retrieval at scale", "275 tasks"),
-        ("sjarmak", "EnterpriseBench", "enterprise tasks", "112 tasks"),
-        ("sjarmak", "migration-evals", "migration grading", "3 recipes"),
-        ("sjarmak", "agent-diagnostics", "why agents fail", "12k trials"),
-        ("sjarmak", "mg-ax", "AX of MCP tools", "shipped"),
+        ("sjarmak", "codeprobe", "evals from your PRs", "on pypi", "owner"),
+        ("sourcegraph", "CodeScaleBench", "retrieval at scale", "275 tasks", "owner"),
+        ("sjarmak", "EnterpriseBench", "enterprise tasks", "112 tasks", "owner"),
+        ("sjarmak", "migration-evals", "migration grading", "3 recipes", "owner"),
+        ("sjarmak", "agent-diagnostics", "why agents fail", "12k trials", "owner"),
+        ("sjarmak", "mg-ax", "AX of MCP tools", "shipped", "owner"),
     ]),
     ("gas city", [
-        ("sjarmak", "gascity", "orchestration SDK", "upstream"),
-        ("sjarmak", "gascity-packs", "opt-in agent packs", "upstream"),
-        ("sjarmak", "gascity-dashboard", "operator dashboard", "upstream"),
+        ("sjarmak", "gascity", "orchestration SDK", "upstream", "maintainer"),
+        ("sjarmak", "gascity-packs", "opt-in agent packs", "upstream", "maintainer"),
+        ("sjarmak", "gascity-dashboard", "operator dashboard", "upstream", "maintainer"),
     ]),
     ("research", [
-        ("sjarmak", "agent-code-authorship", "who wrote the code", "72-89%"),
-        ("sjarmak", "mem", "does memory help", "6.7k items"),
-        ("sjarmak", "agent-oriented-architecture", "agent-ready repos", "toolkit"),
-        ("sjarmak", "GEO_public", "LLM brand visibility", "demo"),
+        ("sjarmak", "agent-code-authorship", "who wrote the code", "72-89%", "owner"),
+        ("sjarmak", "mem", "does memory help", "6.7k items", "owner"),
+        ("sjarmak", "agent-oriented-architecture", "agent-ready repos", "toolkit", "owner"),
+        ("sjarmak", "GEO_public", "LLM brand visibility", "demo", "owner"),
     ]),
     ("agent tooling", [
-        ("sjarmak", "livedocs", "docs-drift over MCP", "v0.2"),
-        ("sjarmak", "tom-swe", "user theory-of-mind", "3-tier mem"),
-        ("sjarmak", "coding-agent-workflows", "portable standards", "rendered"),
-        ("sjarmak", "brains", "agent warm-starts", "forkable"),
-        ("sjarmak", "hvir", "view-first workbench", "shipped"),
-        ("sjarmak", "code-intelligence-digest", "code-intel digest", "weekly"),
+        ("sjarmak", "livedocs", "docs-drift over MCP", "v0.2", "owner"),
+        ("sjarmak", "tom-swe", "user theory-of-mind", "3-tier mem", "owner"),
+        ("sjarmak", "coding-agent-workflows", "portable standards", "rendered", "owner"),
+        ("sjarmak", "brains", "agent warm-starts", "forkable", "owner"),
+        ("sjarmak", "hvir", "view-first workbench", "shipped", "owner"),
+        ("sjarmak", "code-intelligence-digest", "code-intel digest", "weekly", "owner"),
     ]),
     ("scix + search", [
-        ("sjarmak", "scix-agent", "32.4M-paper server", "15 tools"),
-        ("sjarmak", "nls-finetune-scix", "NL search for SciX", "shipped"),
+        ("sjarmak", "scix-agent", "32.4M-paper server", "15 tools", "owner"),
+        ("sjarmak", "nls-finetune-scix", "NL search for SciX", "shipped", "owner"),
     ]),
     ("play", [
-        ("sjarmak", "website", "sjarmak.ai", "live"),
-        ("sjarmak", "WheelOfFortune", "wheel practice app", "shipped"),
-        ("sjarmak", "embertide", "browser deckbuilder", "playable"),
+        ("sjarmak", "website", "sjarmak.ai", "live", "owner"),
+        ("sjarmak", "WheelOfFortune", "wheel practice app", "shipped", "owner"),
+        ("sjarmak", "embertide", "browser deckbuilder", "playable", "owner"),
     ]),
 ]
 
@@ -81,10 +84,6 @@ TYPE_S = 0.031
 
 # column content widths (chars); the grid is self-consistent, checked by cell()
 COLS = {"task": 27, "what": 20, "updated": 8, "commits": 13, "role": 11, "status": 15}
-
-PERMISSION_TO_ROLE = {"admin": "owner", "maintain": "maintainer", "write": "contributor",
-                       "triage": "contributor", "read": "contributor", "none": "contributor"}
-
 
 def api(path):
     url = path if path.startswith("http") else f"https://api.github.com{path}"
@@ -124,26 +123,12 @@ def mine_commit_count(owner, name):
     return count
 
 
-def repo_role(owner, name):
-    if owner == OWNER:
-        return "owner"
-    try:
-        perm, _ = api(f"/repos/{owner}/{name}/collaborators/{OWNER}/permission")
-        return PERMISSION_TO_ROLE.get(perm["permission"], "contributor")
-    except urllib.error.HTTPError as e:
-        # the Actions GITHUB_TOKEN is scoped to this repo and cannot read
-        # collaborator permissions on other orgs' repos; fall back loudly
-        print(f"warning: permission lookup failed for {owner}/{name} ({e.code}), using 'contributor'")
-        return "contributor"
-
-
 def repo_activity(owner, name):
-    """(days since last push, my commits, total commits, role)"""
+    """(days since last push, my commits, total commits)"""
     now = datetime.datetime.now(datetime.timezone.utc)
     meta, _ = api(f"/repos/{owner}/{name}")
     pushed = datetime.datetime.fromisoformat(meta["pushed_at"].replace("Z", "+00:00"))
     total = commit_count(owner, name)
-    role = repo_role(owner, name)
     if meta["fork"]:
         # a fork carries real upstream contributor history (e.g. gascity's
         # Julian Knutsen, Jim Wordelman, ...); only alias-name matches are mine
@@ -153,7 +138,7 @@ def repo_activity(owner, name):
         # agents' (e.g. CodeScaleBench's "furiosa"/"mayor"/"refinery" personas),
         # never an outside human contributor
         mine = total
-    return (now - pushed).days, mine, total, role
+    return (now - pushed).days, mine, total
 
 
 def updated_str(days):
@@ -237,8 +222,8 @@ def build_svg(activity, total, archived):
     for label, rows in CATEGORIES:
         s.line([("dim", border)], gap=0.4)
         s.line([("dim", "| "), ("cyan", cell(label, "task")), ("dim", blank_cells)], gap=0.5)
-        for owner, name, what, result in rows:
-            days_idle, mine, total, role = activity[(owner, name)]
+        for owner, name, what, result, role in rows:
+            days_idle, mine, total = activity[(owner, name)]
             running = days_idle <= RUNNING_DAYS
             if not running:
                 shipped += 1
@@ -252,7 +237,7 @@ def build_svg(activity, total, archived):
                 ("dim", "| "), ("", cell(what, "what")),
                 ("dim", "| "), ("green" if running else "muted", cell(updated_str(days_idle), "updated")),
                 ("dim", "| "), ("bright", commits_txt),
-                ("dim", "| "), ("cyan" if role == "owner" else "muted", cell(role, "role")),
+                ("dim", "| "), ("cyan" if role in ("owner", "maintainer") else "muted", cell(role, "role")),
                 ("dim", "| "), ("amber" if running else "green", cell(status, "status")), ("dim", "|"),
             ], gap=0.5)
     s.line([("dim", border)], gap=0.5)
@@ -317,7 +302,7 @@ def build_svg(activity, total, archived):
 def main():
     activity = {}
     for _, rows in CATEGORIES:
-        for owner, name, _, _ in rows:
+        for owner, name, _, _, _ in rows:
             activity[(owner, name)] = repo_activity(owner, name)
     total, archived = account_counts()
     svg = build_svg(activity, total, archived)
