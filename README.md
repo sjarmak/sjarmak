@@ -33,7 +33,6 @@
     <a href="https://github.com/sjarmak/tom-swe">tom-swe</a> &middot;
     <a href="https://github.com/sjarmak/coding-agent-workflows">coding-agent-workflows</a> &middot;
     <a href="https://github.com/sjarmak/brains">brains</a> &middot;
-    <a href="https://github.com/sjarmak/hvir">hvir</a> &middot;
     <a href="https://github.com/sjarmak/code-intelligence-digest">code-intelligence-digest</a>
   </sub>
   <br>

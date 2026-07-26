@@ -49,7 +49,6 @@ CATEGORIES = [
         ("sjarmak", "tom-swe", "user theory-of-mind", "3-tier mem", "owner"),
         ("sjarmak", "coding-agent-workflows", "portable standards", "rendered", "owner"),
         ("sjarmak", "brains", "agent warm-starts", "forkable", "owner"),
-        ("sjarmak", "hvir", "view-first workbench", "shipped", "owner"),
         ("sjarmak", "code-intelligence-digest", "code-intel digest", "weekly", "owner"),
     ]),
     ("scix + search", [
