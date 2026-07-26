@@ -73,8 +73,11 @@ W, LH, FS, PAD = 687, 17, 12, 22
 CHROME = 34
 TYPE_S = 0.031
 
-# column content widths (chars); the full row is exactly 88 chars wide
-COLS = {"task": 27, "what": 20, "updated": 8, "commits": 7, "status": 15}
+# column content widths (chars); the grid is self-consistent, checked by cell()
+COLS = {"task": 27, "what": 20, "updated": 8, "commits": 13, "role": 11, "status": 15}
+
+PERMISSION_TO_ROLE = {"admin": "maintainer", "maintain": "maintainer", "write": "contributor",
+                       "triage": "contributor", "read": "contributor", "none": "contributor"}
 
 
 def api(path):
@@ -86,19 +89,34 @@ def api(path):
         return json.load(r), r.headers
 
 
-def repo_activity(owner, name):
-    """(days since last push, total commit count on the default branch)"""
-    now = datetime.datetime.now(datetime.timezone.utc)
-    meta, _ = api(f"/repos/{owner}/{name}")
-    pushed = datetime.datetime.fromisoformat(meta["pushed_at"].replace("Z", "+00:00"))
-    commits, headers = api(f"/repos/{owner}/{name}/commits?per_page=1")
+def commit_count(owner, name, author=None):
+    q = f"?author={author}&per_page=1" if author else "?per_page=1"
+    commits, headers = api(f"/repos/{owner}/{name}/commits{q}")
     link = headers.get("Link", "")
     if 'rel="last"' in link:
         last = [p for p in link.split(",") if 'rel="last"' in p][0]
-        total = int(last.split("page=")[-1].split(">")[0].split("&")[0])
-    else:
-        total = len(commits)
-    return (now - pushed).days, total
+        return int(last.split("page=")[-1].split(">")[0].split("&")[0])
+    return len(commits)
+
+
+def repo_role(owner, name):
+    if owner == OWNER:
+        return "owner"
+    perm, _ = api(f"/repos/{owner}/{name}/collaborators/{OWNER}/permission")
+    return PERMISSION_TO_ROLE.get(perm["permission"], "contributor")
+
+
+def repo_activity(owner, name):
+    """(days since last push, my commits, total commits, role)"""
+    now = datetime.datetime.now(datetime.timezone.utc)
+    meta, _ = api(f"/repos/{owner}/{name}")
+    pushed = datetime.datetime.fromisoformat(meta["pushed_at"].replace("Z", "+00:00"))
+    # always filter by author, even on owned repos: a fork's total includes
+    # upstream history that isn't hers just because she owns the copy
+    total = commit_count(owner, name)
+    mine = commit_count(owner, name, author=OWNER)
+    role = repo_role(owner, name)
+    return (now - pushed).days, mine, total, role
 
 
 def updated_str(days):
@@ -173,28 +191,31 @@ def build_svg(activity, total, archived):
 
     border = "+" + "+".join("-" * (w + 1) for w in COLS.values()) + "+"
     blank_cells = ("| " + cell("", "what") + "| " + cell("", "updated") + "| "
-                   + cell("", "commits") + "| " + cell("", "status") + "|")
+                   + cell("", "commits") + "| " + cell("", "role") + "| " + cell("", "status") + "|")
     s.line([("dim", border)], gap=0.5)
     s.line([("muted", "| " + cell("TASK", "task") + "| " + cell("WHAT", "what")
                       + "| " + cell("UPDATED", "updated") + "| " + cell("COMMITS", "commits")
-                      + "| " + cell("STATUS", "status") + "|")], gap=0.5)
+                      + "| " + cell("ROLE", "role") + "| " + cell("STATUS", "status") + "|")], gap=0.5)
     shipped = 0
     for label, rows in CATEGORIES:
         s.line([("dim", border)], gap=0.4)
         s.line([("dim", "| "), ("cyan", cell(label, "task")), ("dim", blank_cells)], gap=0.5)
         for owner, name, what, result in rows:
-            days_idle, total_commits = activity[(owner, name)]
+            days_idle, mine, total, role = activity[(owner, name)]
             running = days_idle <= RUNNING_DAYS
             if not running:
                 shipped += 1
             status = "RUNNING" if running else f"PASS {result}"
             task = name if owner == OWNER else f"{owner}/{name}"
-            commits_txt = f"{total_commits:,}".rjust(COLS["commits"] - 1) + " "
+            commits_txt = f"{mine}/{total}".rjust(COLS["commits"] - 1) + " "
+            if len(commits_txt) > COLS["commits"]:
+                raise ValueError(f"commits cell overflows: {commits_txt!r}")
             s.line([
                 ("dim", "| "), ("link", cell(task, "task")),
                 ("dim", "| "), ("", cell(what, "what")),
                 ("dim", "| "), ("green" if running else "muted", cell(updated_str(days_idle), "updated")),
                 ("dim", "| "), ("bright", commits_txt),
+                ("dim", "| "), ("cyan" if role == "owner" else "muted", cell(role, "role")),
                 ("dim", "| "), ("amber" if running else "green", cell(status, "status")), ("dim", "|"),
             ], gap=0.5)
     s.line([("dim", border)], gap=0.5)
